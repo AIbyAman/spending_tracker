@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-chart-pie"></i> Financial Reports</h2>
+
+<div class="row mb-4">
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-light border-bottom">
+        <h5 class="m-0"><i class="fas fa-pie-chart"></i> Spending by Category</h5>
+      </div>
+      <div class="card-body">
+        <canvas id="catChart" height="300"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-light border-bottom">
+        <h5 class="m-0"><i class="fas fa-chart-line"></i> Monthly Trend</h5>
+      </div>
+      <div class="card-body">
+        <canvas id="lineChart" height="300"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-light border-bottom">
+        <h5 class="m-0"><i class="fas fa-balance-scale"></i> Budget vs Actual (Last 6 Months)</h5>
+      </div>
+      <div class="card-body">
+        <canvas id="budgetChart" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+  const colors = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b', '#fa709a', '#fee140', '#30cfd0'];
+  
+  fetch('/api/summary')
+    .then(r => r.json())
+    .then(data => {
+      const labels = Object.keys(data);
+      const values = Object.values(data);
+      new Chart(document.getElementById('catChart'), {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data: values, backgroundColor: colors, borderColor: '#fff', borderWidth: 2 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+      });
+    });
+  
+  fetch('/api/monthly')
+    .then(r => r.json())
+    .then(data => {
+      const labels = data.map(d => d.month);
+      const values = data.map(d => d.total);
+      new Chart(document.getElementById('lineChart'), {
+        type: 'line',
+        data: { labels, datasets: [{ label: 'Total Expenses', data: values, borderColor: '#667eea', backgroundColor: 'rgba(102,126,234,0.1)', fill: true, tension: 0.4, pointBackgroundColor: '#667eea' }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+      });
+    });
+  
+  fetch('/api/budget-vs-actual')
+    .then(r => r.json())
+    .then(data => {
+      const labels = data.map(d => d.month);
+      new Chart(document.getElementById('budgetChart'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Budget', data: data.map(d => d.budget), backgroundColor: 'rgba(102,126,234,0.6)' },
+            { label: 'Actual', data: data.map(d => d.actual), backgroundColor: 'rgba(240, 147, 251,0.6)' }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: false }, y: { beginAtZero: true } } }
+      });
+    });
+</script>
+{% endblock %}
